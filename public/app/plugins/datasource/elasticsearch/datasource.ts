@@ -921,10 +921,16 @@ export class ElasticDatasource
       return query;
     }
     const esFilters = adhocFilters.map((filter) => {
-      const { key, operator, value } = filter;
+      let { key, operator, value } = filter;
       if (!key || !value) {
         return;
       }
+      /**
+       * Keys and values in ad hoc filters may contain characters such as
+       * colons, which needs to be escaped.
+       */
+      key = this.escapeAdHocFilter(key);
+      value = this.escapeAdHocFilter(value);
       switch (operator) {
         case '=':
           return `${key}:"${value}"`;
@@ -944,6 +950,10 @@ export class ElasticDatasource
 
     const finalQuery = [query, ...esFilters].filter((f) => f).join(' AND ');
     return finalQuery;
+  }
+
+  private escapeAdHocFilter(value: string) {
+    return value.replace(/([:])/g, '\\$1');
   }
 
   // Used when running queries through backend
